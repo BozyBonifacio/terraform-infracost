@@ -5,6 +5,7 @@ on:
     paths:
       - "**/*.tf"
       - "**/*.tfvars"
+      - "infracost.yml"
       - ".github/workflows/terraform-ci.yml"
   push:
     branches:
@@ -12,6 +13,7 @@ on:
     paths:
       - "**/*.tf"
       - "**/*.tfvars"
+      - "infracost.yml"
       - ".github/workflows/terraform-ci.yml"
 
 jobs:
@@ -46,3 +48,48 @@ jobs:
       - name: Terraform plan
         working-directory: environments/${{ matrix.environment }}
         run: terraform plan -var-file="terraform.tfvars" -no-color
+
+  infracost:
+    name: Infracost cost estimate
+    runs-on: ubuntu-latest
+    # Only run on pull requests so we can diff against the base branch and
+    # post the cost estimate as a PR comment.
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      - name: Generate Infracost cost baseline
+        run: |
+          infracost breakdown --config-file=infracost.yml \
+                              --format=json \
+                              --out-file=/tmp/infracost-base.json
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      - name: Generate Infracost diff
+        run: |
+          infracost diff --config-file=infracost.yml \
+                         --compare-to=/tmp/infracost-base.json \
+                         --format=json \
+                         --out-file=/tmp/infracost.json
+
+      - name: Post Infracost comment
+        run: |
+          infracost comment github --path=/tmp/infracost.json \
+                                   --repo=$GITHUB_REPOSITORY \
+                                   --github-token=${{ github.token }} \
+                                   --pull-request=${{ github.event.pull_request.number }} \
+                                   --behavior=update

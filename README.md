@@ -14,7 +14,7 @@ This project is intended for a portfolio or public profile. It demonstrates how 
 - Infracost cost estimates on pull requests
 - GitHub Actions CI for pull requests
 - Manual approval-style apply workflow
-- Safe local providers only: `random` and `local`
+- Safe providers: `random`/`local` plus a mock-credential AWS workload that is priced but never deployed
 
 ## Repository structure
 
@@ -84,12 +84,32 @@ For CI, add your key as a repository secret named `INFRACOST_API_KEY`
 4. Show the GitHub Actions workflow running `fmt`, `validate`, and `plan`.
 5. Use the manual apply workflow only as a demo, since this project only writes local files inside the runner.
 
-## No cloud cost
+## Example workload for cost estimates
 
-This project does not provision real infrastructure. It uses:
+To make Infracost produce a real cost figure, each environment declares a small
+example AWS workload in [`modules/example-workload`](modules/example-workload):
+
+- `aws_instance` — EC2 compute (`t3.micro` in dev, `t3.large` in prod)
+- `aws_ebs_volume` — a gp3 data volume (20 GiB dev, 100 GiB prod)
+- `aws_db_instance` — a PostgreSQL RDS database
+
+These are **priced, not deployed**. The AWS provider is configured with mock
+credentials and `skip_*` flags (see `environments/*/providers.tf`), so
+`terraform plan` and Infracost run fully offline — no AWS account, no real
+credentials. The inline mock keys also override any real credentials in your
+shell, so an accidental `terraform apply` fails rather than creating billable
+infrastructure.
+
+Because dev and prod are sized differently, the Infracost PR comment shows a
+real monthly cost and a clear difference between environments.
+
+## No real cloud cost
+
+This project never provisions real infrastructure. It uses:
 
 - `random_id` to simulate generated environment IDs
 - `local_file` to simulate generated deployment metadata
+- a mock-credential AWS workload that Infracost prices but Terraform never deploys
 
 That makes it safe for public demos and interviews.
 

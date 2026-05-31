@@ -72,9 +72,16 @@ infracost breakdown --config-file=infracost.yml
 For CI, add your key as a repository secret named `INFRACOST_API_KEY`
 (Settings → Secrets and variables → Actions).
 
-> This demo only uses the `random` and `local` providers, which cost nothing, so
-> the estimate is `$0`. The pipeline is set up so real billable resources would
-> show their cost automatically.
+The estimate covers the example AWS workload described below, so the PR comment
+shows a real monthly cost and a difference between `dev` and `prod`.
+
+### Free tier only
+
+The CI job sets `INFRACOST_ENABLE_CLOUD=false`, so runs are **not** uploaded to
+Infracost Cloud. Cost estimates and PR comments use the free Cloud Pricing API
+and stay within the free plan. Governance features (tag policies, FinOps
+policies, cost guardrails) are part of paid Infracost Cloud and are
+intentionally not relied on here — so CI never fails on a policy check.
 
 ## How to showcase this on GitHub
 

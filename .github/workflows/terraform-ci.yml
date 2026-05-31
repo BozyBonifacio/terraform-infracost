@@ -59,6 +59,16 @@ jobs:
       contents: read
       pull-requests: write
 
+    # Run on the free tier only: do NOT upload runs to Infracost Cloud.
+    # The upload is what triggers tag/FinOps/guardrail governance (a paid Cloud
+    # feature). With it off, cost estimates and the PR comment still work via the
+    # free Cloud Pricing API, and CI never fails on governance policies.
+    # Both names are set because Infracost renamed this toggle across versions;
+    # an unrecognized variable is simply ignored.
+    env:
+      INFRACOST_ENABLE_CLOUD: "false"
+      INFRACOST_ENABLE_CLOUD_UPLOAD: "false"
+
     steps:
       - name: Setup Infracost
         uses: infracost/actions/setup@v3

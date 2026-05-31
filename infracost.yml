@@ -1,0 +1,10 @@
+version: 0.1
+
+# Infracost configuration: https://www.infracost.io/docs/features/config_file/
+# Defines the Terraform projects that Infracost should scan for cost estimates.
+projects:
+  - path: environments/dev
+    name: dev
+
+  - path: environments/prod
+    name: prod

@@ -34,7 +34,27 @@ terraform validate
 terraform plan -var-file="terraform.tfvars"
 ```
 
-## 5. Apply
+## 5. Cost estimate
+
+[Infracost](https://www.infracost.io/) estimates the cost impact of a change
+before it is applied, so reviewers can see the price tag alongside the plan.
+
+```bash
+# One-time setup (free API key)
+infracost auth login
+
+# Estimate all environments defined in infracost.yml
+infracost breakdown --config-file=infracost.yml
+```
+
+In CI, Infracost diffs the pull request against the base branch and posts the
+cost difference as a PR comment.
+
+> Note: this demo uses only the `random` and `local` providers, which have no
+> cloud cost, so the estimate is `$0`. The integration is wired up so that the
+> moment real billable resources are added, the cost shows up automatically.
+
+## 6. Apply
 
 `terraform apply` should normally be gated by review, approval, or a protected branch workflow.
 
@@ -46,9 +66,10 @@ terraform apply -var-file="terraform.tfvars"
 
 1. Developer opens a pull request.
 2. CI runs format, init, validate, and plan.
-3. Reviewer checks the Terraform plan output.
-4. Approved changes are merged.
-5. Apply is triggered manually or by a controlled release process.
+3. Infracost posts the estimated cost difference on the pull request.
+4. Reviewer checks the Terraform plan output and the cost impact.
+5. Approved changes are merged.
+6. Apply is triggered manually or by a controlled release process.
 
 ## Environment strategy
 

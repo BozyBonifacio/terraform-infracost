@@ -11,6 +11,7 @@ This project is intended for a portfolio or public profile. It demonstrates how 
 - Environment separation for `dev` and `prod`
 - Variable validation and outputs
 - `terraform fmt`, `init`, `validate`, and `plan`
+- Infracost cost estimates on pull requests
 - GitHub Actions CI for pull requests
 - Manual approval-style apply workflow
 - Safe local providers only: `random` and `local`
@@ -31,6 +32,7 @@ This project is intended for a portfolio or public profile. It demonstrates how 
 │   └── PROCESS.md
 ├── scripts/
 │   └── validate-local.sh
+├── infracost.yml
 ├── .gitignore
 └── README.md
 ```
@@ -52,6 +54,27 @@ To run both environments locally:
 ```bash
 bash scripts/validate-local.sh
 ```
+
+## Cost estimates with Infracost
+
+[Infracost](https://www.infracost.io/) shows the cost impact of a change before
+it ships. CI runs it on every pull request and posts the cost difference as a
+comment.
+
+To run it locally:
+
+```bash
+# Install: https://www.infracost.io/docs/#1-install-infracost
+infracost auth login                          # one-time, free API key
+infracost breakdown --config-file=infracost.yml
+```
+
+For CI, add your key as a repository secret named `INFRACOST_API_KEY`
+(Settings → Secrets and variables → Actions).
+
+> This demo only uses the `random` and `local` providers, which cost nothing, so
+> the estimate is `$0`. The pipeline is set up so real billable resources would
+> show their cost automatically.
 
 ## How to showcase this on GitHub
 

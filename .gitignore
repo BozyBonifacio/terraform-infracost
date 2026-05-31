@@ -8,3 +8,8 @@ crash.*.log
 *.auto.tfvars
 *.local
 .DS_Store
+
+# Infracost
+infracost.json
+infracost-base.json
+.infracost/

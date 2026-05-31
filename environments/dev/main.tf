@@ -12,8 +12,11 @@ module "profile_site_metadata" {
 module "example_workload" {
   source = "../../modules/example-workload"
 
-  environment          = var.environment
-  tags                 = var.tags
+  environment = var.environment
+  tags = merge(var.tags, {
+    Owner       = var.owner
+    Application = var.application_name
+  })
   instance_type        = var.instance_type
   data_volume_size     = var.data_volume_size
   db_instance_class    = var.db_instance_class

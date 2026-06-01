@@ -27,7 +27,8 @@ This project is intended for a portfolio or public profile. It demonstrates how 
 │   ├── dev/
 │   └── prod/
 ├── modules/
-│   └── profile-site-metadata/
+│   ├── profile-site-metadata/
+│   └── example-workload/
 ├── docs/
 │   └── PROCESS.md
 ├── scripts/
@@ -88,17 +89,20 @@ intentionally not relied on here — so CI never fails on a policy check.
 1. Create a new repository named `terraform-process-showcase`.
 2. Push this project to GitHub.
 3. Open a pull request that changes a variable in `environments/dev/terraform.tfvars`.
-4. Show the GitHub Actions workflow running `fmt`, `validate`, and `plan`.
-5. Use the manual apply workflow only as a demo, since this project only writes local files inside the runner.
+4. Show the GitHub Actions workflow running `fmt`, `validate`, and `plan`, plus the Infracost comment with the cost difference.
+5. The manual apply workflow is demo-only. Because the AWS provider uses mock credentials, `apply` cannot create the example cloud resources — so nothing is provisioned and no cloud bill is incurred.
 
 ## Example workload for cost estimates
 
 To make Infracost produce a real cost figure, each environment declares a small
 example AWS workload in [`modules/example-workload`](modules/example-workload):
 
-- `aws_instance` — EC2 compute (`t3.micro` in dev, `t3.large` in prod)
-- `aws_ebs_volume` — a gp3 data volume (20 GiB dev, 100 GiB prod)
-- `aws_db_instance` — a PostgreSQL RDS database
+- `aws_instance` — EC2 compute on Graviton/ARM (`t4g.micro` in dev, `t4g.large` in prod)
+- `aws_ebs_volume` — a gp3 data volume (20 GiB in dev, 100 GiB in prod)
+- `aws_db_instance` — a PostgreSQL RDS database on Graviton (`db.t4g.micro` + 20 GiB in dev, `db.t4g.medium` + 100 GiB in prod)
+
+Graviton instance classes are used to follow common FinOps best practice (better
+price/performance than the equivalent `t3`/`x86` classes).
 
 These are **priced, not deployed**. The AWS provider is configured with mock
 credentials and `skip_*` flags (see `environments/*/providers.tf`), so
@@ -133,8 +137,13 @@ That makes it safe for public demos and interviews.
 
 ## Sample execution
 
-cd terraform-process-showcase/environments/dev
-terraform init
-terraform fmt
+```bash
+cd environments/dev
+terraform init        # downloads the AWS, random, and local providers
+terraform fmt -check -recursive ../..
 terraform validate
-terraform plan
+terraform plan        # runs offline via the mock AWS provider; values come from terraform.tfvars
+
+# Optional: cost estimate for both environments
+infracost breakdown --config-file=../../infracost.yml
+```

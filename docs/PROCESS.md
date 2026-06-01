@@ -50,9 +50,11 @@ infracost breakdown --config-file=infracost.yml
 In CI, Infracost diffs the pull request against the base branch and posts the
 cost difference as a PR comment.
 
-> Note: this demo uses only the `random` and `local` providers, which have no
-> cloud cost, so the estimate is `$0`. The integration is wired up so that the
-> moment real billable resources are added, the cost shows up automatically.
+> Note: each environment declares a small example AWS workload (EC2 + EBS + RDS)
+> purely so Infracost has something to price. It is configured with mock
+> credentials and `skip_*` flags, so `terraform plan` and Infracost run fully
+> offline — nothing is ever deployed and no AWS account is required. Dev and
+> prod are sized differently, so the cost estimate differs between them.
 
 ## 6. Apply
 

@@ -3,27 +3,27 @@ variable "environment" {
   type        = string
 }
 
-variable "owner" {
-  description = "Owner of the application."
-  type        = string
-}
-
-variable "application_name" {
-  description = "Application name."
-  type        = string
-}
-
 variable "tags" {
-  description = "Common tags."
+  description = "Common tags applied to all resources."
   type        = map(string)
   default     = {}
 }
 
-# --- Example workload sizing (priced by Infracost, never deployed) ---
-
 variable "instance_type" {
   description = "EC2 instance type for the example workload."
   type        = string
+}
+
+variable "ami_id" {
+  description = "AMI ID for the EC2 instance. Placeholder value; nothing is ever deployed."
+  type        = string
+  default     = "ami-0c55b159cbfafe1f0"
+}
+
+variable "availability_zone" {
+  description = "Availability zone for the data volume."
+  type        = string
+  default     = "us-east-1a"
 }
 
 variable "data_volume_size" {

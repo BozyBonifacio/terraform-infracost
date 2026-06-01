@@ -14,7 +14,7 @@ This project is intended for a portfolio or public profile. It demonstrates how 
 - Infracost cost estimates on pull requests
 - GitHub Actions CI for pull requests
 - Manual approval-style apply workflow
-- Safe local providers only: `random` and `local`
+- Safe providers: `random`/`local` plus a mock-credential AWS workload that is priced but never deployed
 
 ## Repository structure
 
@@ -27,7 +27,8 @@ This project is intended for a portfolio or public profile. It demonstrates how 
 │   ├── dev/
 │   └── prod/
 ├── modules/
-│   └── profile-site-metadata/
+│   ├── profile-site-metadata/
+│   └── example-workload/
 ├── docs/
 │   └── PROCESS.md
 ├── scripts/
@@ -72,24 +73,54 @@ infracost breakdown --config-file=infracost.yml
 For CI, add your key as a repository secret named `INFRACOST_API_KEY`
 (Settings → Secrets and variables → Actions).
 
-> This demo only uses the `random` and `local` providers, which cost nothing, so
-> the estimate is `$0`. The pipeline is set up so real billable resources would
-> show their cost automatically.
+The estimate covers the example AWS workload described below, so the PR comment
+shows a real monthly cost and a difference between `dev` and `prod`.
+
+### Free tier only
+
+The CI job sets `INFRACOST_ENABLE_CLOUD=false`, so runs are **not** uploaded to
+Infracost Cloud. Cost estimates and PR comments use the free Cloud Pricing API
+and stay within the free plan. Governance features (tag policies, FinOps
+policies, cost guardrails) are part of paid Infracost Cloud and are
+intentionally not relied on here — so CI never fails on a policy check.
 
 ## How to showcase this on GitHub
 
 1. Create a new repository named `terraform-process-showcase`.
 2. Push this project to GitHub.
 3. Open a pull request that changes a variable in `environments/dev/terraform.tfvars`.
-4. Show the GitHub Actions workflow running `fmt`, `validate`, and `plan`.
-5. Use the manual apply workflow only as a demo, since this project only writes local files inside the runner.
+4. Show the GitHub Actions workflow running `fmt`, `validate`, and `plan`, plus the Infracost comment with the cost difference.
+5. The manual apply workflow is demo-only. Because the AWS provider uses mock credentials, `apply` cannot create the example cloud resources — so nothing is provisioned and no cloud bill is incurred.
 
-## No cloud cost
+## Example workload for cost estimates
 
-This project does not provision real infrastructure. It uses:
+To make Infracost produce a real cost figure, each environment declares a small
+example AWS workload in [`modules/example-workload`](modules/example-workload):
+
+- `aws_instance` — EC2 compute on Graviton/ARM (`t4g.micro` in dev, `t4g.large` in prod)
+- `aws_ebs_volume` — a gp3 data volume (20 GiB in dev, 100 GiB in prod)
+- `aws_db_instance` — a PostgreSQL RDS database on Graviton (`db.t4g.micro` + 20 GiB in dev, `db.t4g.medium` + 100 GiB in prod)
+
+Graviton instance classes are used to follow common FinOps best practice (better
+price/performance than the equivalent `t3`/`x86` classes).
+
+These are **priced, not deployed**. The AWS provider is configured with mock
+credentials and `skip_*` flags (see `environments/*/providers.tf`), so
+`terraform plan` and Infracost run fully offline — no AWS account, no real
+credentials. The inline mock keys also override any real credentials in your
+shell, so an accidental `terraform apply` fails rather than creating billable
+infrastructure.
+
+Because dev and prod are sized differently, the Infracost PR comment shows a
+real monthly cost and a clear difference between environments.
+
+## No real cloud cost
+
+This project never provisions real infrastructure. It uses:
 
 - `random_id` to simulate generated environment IDs
 - `local_file` to simulate generated deployment metadata
+- a mock-credential AWS workload that Infracost prices but Terraform never deploys
 
 That makes it safe for public demos and interviews.
 
@@ -106,8 +137,13 @@ That makes it safe for public demos and interviews.
 
 ## Sample execution
 
-cd terraform-process-showcase/environments/dev
-terraform init
-terraform fmt
+```bash
+cd environments/dev
+terraform init        # downloads the AWS, random, and local providers
+terraform fmt -check -recursive ../..
 terraform validate
-terraform plan
+terraform plan        # runs offline via the mock AWS provider; values come from terraform.tfvars
+
+# Optional: cost estimate for both environments
+infracost breakdown --config-file=../../infracost.yml
+```
